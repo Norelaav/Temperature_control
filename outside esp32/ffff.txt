@@ -1,0 +1,201 @@
+/*#include <driver/adc.h>
+#include <iostream>
+#include <string>
+#include <math.h>
+*/
+/*
+rasp: 192.168.88.246
+
+comp: 192.168.88.241
+ */
+
+#include <WiFi.h>
+
+const char* ssid     = "smartpark_service";
+const char* password = "smartpark_2021";
+const char* host = "192.168.88.241";
+const int port = 8090;
+
+#define voicePin 34
+#define butPin 4
+
+unsigned long mytimer = 0;
+int b = 0;
+int sensor[16000];
+int sensor2[16000];
+unsigned long t = 0;
+unsigned long mytimer2 = 0;
+
+void setup()
+{
+  pinMode(voicePin, INPUT);
+  pinMode(butPin, INPUT);
+  Serial.begin(9600);
+  
+  analogSetWidth(12);
+  analogSetAttenuation(ADC_11db);
+  adcAttachPin(35);
+
+  Serial.print("Connecting to ");
+  Serial.println(ssid);
+  /* connect to your WiFi */
+  WiFi.begin(ssid, password);
+  /* wait until ESP32 connect to WiFi*/
+  while (WiFi.status() != WL_CONNECTED) {
+      delay(500);
+      Serial.print(".");
+  }
+  Serial.println("");
+  Serial.println("WiFi connected with IP address: ");
+  Serial.println(WiFi.localIP());
+  //adc1_config_width(ADC_WIDTH_BIT_12);//настройка ширины канала ацп 0-4095
+  //adc1_config_channel_atten(ADC1_CHANNEL_0,ADC_ATTEN_DB_0); //настройка уровня приёма, тут от 150 до 1750 мВ
+}
+void loop()
+{
+  WiFiClient client;
+  if (!client.connect(host, port)) {
+    Serial.println("connection failed");
+    return;
+  }
+  if (b == 0){
+    Serial.println("Connected!");  
+    b = 1;
+  }
+  //Serial.println(digitalRead(butPin));
+  if (digitalRead(butPin) == 0) {
+    b = 2;
+    if ((micros() - mytimer) >= 125) {
+      mytimer = micros();
+      int val = analogRead(voicePin);
+      val &= 0x0FFF;
+      //Serial.println(val);
+      //client.print(val);
+      //client.stop();
+      if (((t / 16000) % 2) == 0) {
+        sensor[t % 16000]=val;  
+      }
+      else {
+        sensor2[t % 16000]=val;
+      }
+      t++;
+      if ((millis() - mytimer2) >= 1999) {
+        mytimer2 = millis();
+        if (((t / 16000) % 2) == 0) {
+          for (int i=0;i<(sizeof(sensor2)/ sizeof(val)); i++) {
+          client.print(sensor2[i]);
+          //client.stop();  
+        }
+        else {
+          for (int i=0;i<(sizeof(sensor)/ sizeof(val)); i++) {
+          client.print(sensor[i]);
+          //client.stop();
+        }
+        /*for (int i=0;i<(sizeof(sensor)/ sizeof(val)); i++) {
+          client.print(val);
+          //client.stop();
+        }*/
+      }
+    }
+  }
+  if ((digitalRead(butPin) == 1) && (b == 2)) {
+    client.print('end');
+    client.stop();  
+    Serial.println('END');
+    b = 1;
+  }
+}
+
+
+
+
+import socket
+
+HOST = '' # Server IP or Hostname
+PORT = 8090 # Pick an open Port (1000+ recommended), must match the client sport
+
+f = open('C:\\Users\\dss\\Desktop\\python2222\\nums.txt', 'w')
+f.close()
+
+while True:
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind((HOST, PORT))
+    s.listen(2)
+    conn, addr = s.accept()
+    data = conn.recv(1024)
+    print(data)
+    if data == '6647396':
+        break
+    s.close()
+    f = open('C:\\Users\\dss\\Desktop\\python2222\\nums.txt', 'a')
+    f.write(str(data))
+    f.write(' ')
+    f.close()
+
+    conn.close() # Close connections    
+f = open('C:\\Users\\dss\\Desktop\\python2222\\nums.txt', 'r')
+print(*f)
+
+
+
+#include <WiFi.h>
+/* change ssid and password according to yours WiFi*/
+const char* ssid     = "smartpark_service";
+const char* password = "smartpark_2021";
+const char* host = "192.168.88.247";
+const int port = 7777;
+
+int btn = 4;
+int sens = 35;
+int val = 0;
+bool s = 0;
+char* mas[] = {};
+
+void setup()
+{
+    Serial.begin(9600);
+    Serial.print("Connecting to ");
+    Serial.println(ssid);
+    /* connect to your WiFi */
+    WiFi.begin(ssid, password);
+    /* wait until ESP32 connect to WiFi*/
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(500);
+        Serial.print(".");
+    }
+    Serial.println("");
+    Serial.println("WiFi connected with IP address: ");
+    Serial.println(WiFi.localIP());
+
+    pinMode(sens, INPUT);
+    pinMode(btn, INPUT);
+}
+void loop()
+{
+    val = analogRead(sens);
+    s = digitalRead(btn);
+    
+    /*delay(5000);
+    Serial.print("connecting to ");
+    Serial.println(host);
+    /* Use WiFiClient class to create TCP connections */
+    WiFiClient client;
+    
+    if (!client.connect(host, port)) {
+        Serial.println("connection failed");
+        return;
+    }
+    /* This will send the data to the server */
+    
+    if (s == 1){
+        client.print(val);
+      }
+      
+      
+        //client.print(val);
+        
+    
+  
+    client.stop();
+    //client.stop();
+}
